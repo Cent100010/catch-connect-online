@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>キャッチ＆コネクト オンライン</title>
+<style>
+:root { color-scheme: dark; --felt:#1b4d2e; --panel:#123a25; --line:rgba(255,255,255,.19); --gold:#ffeb3b; --blue:#2196f3; --pink:#e91e63; }
+* { box-sizing:border-box; }
+body { margin:0; padding:12px; background:var(--felt); color:#fff; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+button,input { font:inherit; }
+button { border:0; border-radius:7px; padding:10px 12px; cursor:pointer; background:#e0e0e0; color:#222; font-weight:700; line-height:1.35; }
+button:disabled { opacity:.4; cursor:not-allowed; }
+button.primary { background:var(--blue); color:#fff; }
+button.win { background:var(--pink); color:#fff; }
+button.orange { background:#ff9800; color:#fff; }
+button.subtle { background:#33483b; color:#fff; border:1px solid var(--line); }
+button:hover:not(:disabled) { filter:brightness(1.1); }
+#app { max-width:1100px; margin:0 auto; }
+h1 { margin:0 0 12px; text-align:center; font-size:clamp(21px,4vw,29px); text-shadow:1px 2px 2px #000; }
+h2 { font-size:18px; margin:0 0 10px; }
+h3 { margin:0; font-size:15px; }
+.panel { background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.field { display:flex; flex-direction:column; gap:5px; font-size:13px; }
+.field input { min-width:0; width:100%; padding:10px; border:1px solid #777; border-radius:6px; background:#fff; color:#111; }
+.row { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.muted { color:#c9d7ce; font-size:12px; }
+.room-code { font-size:25px; letter-spacing:4px; font-weight:900; color:var(--gold); }
+#notice { min-height:22px; padding:4px 2px; color:#ffe082; font-size:13px; }
+#notice.error { color:#ffb1b1; }
+.seats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:12px 0; }
+.seat { border:1px solid var(--line); border-radius:8px; padding:10px; background:rgba(0,0,0,.18); min-height:76px; overflow-wrap:anywhere; }
+.seat strong { display:block; margin-bottom:4px; }
+#topbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; }
+#turnline { color:var(--gold); font-weight:800; }
+#players { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.player-area { padding:10px; margin-bottom:0; min-width:0; background:rgba(0,0,0,.25); border:1px solid var(--line); border-radius:9px; }
+.player-area.current { outline:3px solid var(--gold); background:rgba(255,235,59,.09); }
+.player-area.mine { border-color:#80cbc4; }
+.area-head { display:flex; gap:8px; align-items:flex-start; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:7px; margin-bottom:7px; }
+.score { font-size:14px; color:#fff; white-space:nowrap; }
+.coins { font-size:11px; color:#ffe082; margin-top:3px; text-align:right; }
+.hand-line { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:8px; font-size:12px; color:#dce7df; }
+.zone-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.zone { border:1px dashed rgba(255,255,255,.26); background:rgba(0,0,0,.14); border-radius:7px; padding:7px; min-width:0; min-height:80px; max-height:180px; overflow:auto; }
+.zone-title { font-size:11px; color:#cdd8d0; margin-bottom:6px; }
+.cards { display:flex; flex-wrap:wrap; align-content:flex-start; gap:3px; }
+.card { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; width:30px; height:43px; flex:0 0 auto; border-radius:4px; background:#fff; color:#111; border:1px solid #ccc; box-shadow:0 1px 3px #0007; font-size:13px; line-height:1.05; font-weight:800; }
+.card.red { color:#ce1010; }
+.card.back { background:repeating-linear-gradient(45deg,#3a4b5c 0,#3a4b5c 6px,#243746 6px,#243746 12px); border:1px solid #fff; }
+.open-pair { display:flex; gap:1px; border:1px solid #b1c7b8; border-radius:4px; padding:2px; margin:0 3px 3px 0; width:max-content; max-width:100%; }
+#actions { margin-top:12px; }
+#actions h2 { color:var(--gold); }
+.action-list { display:flex; flex-wrap:wrap; gap:7px; }
+.action-list button { max-width:100%; text-align:left; }
+.skill-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.skill-grid button { text-align:left; }
+.skill-grid small { display:block; font-weight:400; opacity:.86; margin-top:3px; }
+#log-box { max-height:220px; overflow:auto; background:rgba(0,0,0,.4); border:1px solid #6a766d; border-radius:7px; padding:8px; font:12px/1.45 ui-monospace,Consolas,monospace; white-space:pre-wrap; }
+.log-msg { margin:2px 0; }
+.log-important { color:var(--gold); font-weight:800; }
+.log-skill { color:#80deea; font-weight:800; }
+#result-list { line-height:1.9; }
+@media (max-width:700px) {
+ body { padding:7px; }
+ .form-grid { grid-template-columns:1fr; }
+ .seats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ #players { grid-template-columns:1fr; }
+ .zone-row { grid-template-columns:1fr 1fr; }
+ .zone { max-height:145px; }
+ .card { width:26px; height:37px; font-size:11px; }
+ .skill-grid { grid-template-columns:1fr; }
+ button { padding:10px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>キャッチ＆コネクト オンライン</h1>
+  <div id="notice" aria-live="polite"></div>
+  <section id="home" class="panel">
+    <h2>オンライン対戦</h2>
+    <div class="form-grid">
+      <div class="panel" style="margin:0;background:rgba(255,255,255,.05)">
+        <h3>部屋を作る</h3>
+        <p class="muted">あなたがホストになります。参加者がそろったらゲームを開始してください。</p>
+        <label class="field">プレイヤー名<input id="create-name" maxlength="16" value="プレイヤー1"></label>
+        <label class="field" style="margin-top:8px">初期持ち点<input id="initial-score" type="number" min="1" max="1000" value="15"></label>
+        <button class="primary" id="create-btn" style="margin-top:10px;width:100%">部屋を作る</button>
+      </div>
+      <div class="panel" style="margin:0;background:rgba(255,255,255,.05)">
+        <h3>部屋に参加する</h3>
+        <p class="muted">ホストから教えてもらった5文字の部屋コードを入力してください。</p>
+        <label class="field">プレイヤー名<input id="join-name" maxlength="16" value="プレイヤー2"></label>
+        <label class="field" style="margin-top:8px">部屋コード<input id="join-code" maxlength="5" placeholder="例：AB3CD" autocapitalize="characters"></label>
+        <button class="primary" id="join-btn" style="margin-top:10px;width:100%">参加する</button>
+      </div>
+    </div>
+    <p class="muted">4人用ゲームです。人間プレイヤーが入っていない席は、ゲーム開始時にCPUが担当します。</p>
+  </section>
+  <section id="lobby" class="panel" hidden>
+    <div class="row" style="justify-content:space-between">
+      <div><div class="muted">部屋コード（他の人に共有）</div><div class="room-code" id="room-code"></div></div>
+      <button id="copy-code" class="subtle">コードをコピー</button>
+    </div>
+    <p class="muted">参加者が入ったら、ホストがゲームを開始します。空席は開始時にCPUになります。</p>
+    <div id="lobby-seats" class="seats"></div>
+    <div class="row"><button id="start-btn" class="primary" hidden>ゲーム開始</button><span id="host-note" class="muted"></span></div>
+  </section>
+  <section id="game" hidden>
+    <div id="topbar" class="panel">
+      <div><div class="muted">部屋コード</div><strong id="game-code"></strong></div>
+      <div><div id="turnline"></div><div class="muted">山札残り：<strong id="deck-count">0</strong>枚　／　ラウンド <strong id="round-count">1</strong></div></div>
+    </div>
+    <div id="players"></div>
+    <section id="actions" class="panel"><h2>あなたの操作</h2><div id="action-content" class="action-list"></div></section>
+    <section id="break-panel" class="panel" hidden></section>
+    <section id="result-panel" class="panel" hidden><h2>ゲーム終了</h2><div id="result-list"></div></section>
+    <section class="panel"><h2>ゲームログ</h2><div id="log-box"></div></section>
+  </section>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let latestLobby = null;
+let latestState = null;
+const $ = id => document.getElementById(id);
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function tell(message, isError=false) {
+  $('notice').textContent = message || '';
+  $('notice').classList.toggle('error', Boolean(isError));
+}
+function act(type, extra={}) { socket.emit('action', { type, ...extra }); }
+function cardLabel(c) { return c ? `${c.suit}${c.rank}` : ''; }
+function cardHtml(c) {
+  if (!c) return '';
+  const red = c.suit.includes('❤️') || c.suit.includes('♦️');
+  return `<div class="card ${red?'red':''}"><span>${escapeHtml(c.suit)}</span><span>${escapeHtml(c.rank)}</span></div>`;
+}
+function pairHtml(pair) { return `<div class="open-pair">${pair.map(cardHtml).join('')}</div>`; }
+function formatPairs(pairs) { return (pairs || []).map(p => `[${cardLabel(p[0])}, ${cardLabel(p[1])}]`).join(' '); }
+function showScreen(screen) {
+  $('home').hidden = screen !== 'home';
+  $('lobby').hidden = screen !== 'lobby';
+  $('game').hidden = screen !== 'game';
+}
+$('create-btn').addEventListener('click', () => {
+  socket.emit('createRoom', { name: $('create-name').value, initialScore: $('initial-score').value });
+});
+$('join-btn').addEventListener('click', () => {
+  socket.emit('joinRoom', { name: $('join-name').value, code: $('join-code').value });
+});
+$('start-btn').addEventListener('click', () => socket.emit('startGame'));
+$('copy-code').addEventListener('click', async () => {
+  const code = latestLobby?.code || latestState?.code;
+  if (!code) return;
+  try { await navigator.clipboard.writeText(code); tell(`部屋コード ${code} をコピーしました。`); }
+  catch { tell(`部屋コード：${code}（コピーできない場合は手動で共有してください）`); }
+});
+socket.on('connect', () => tell('サーバーに接続しました。'));
+socket.on('disconnect', () => tell('サーバーとの接続が切れました。ページを再読み込みして再参加してください。', true));
+socket.on('notice', data => tell(data.message, data.isError));
+socket.on('joinedRoom', data => { $('room-code').textContent = data.code; $('game-code').textContent = data.code; });
+socket.on('lobbyState', data => { latestLobby = data; renderLobby(data); });
+socket.on('gameState', data => { latestState = data; renderGame(data); });
+function renderLobby(data) {
+  showScreen('lobby');
+  $('room-code').textContent = data.code;
+  $('lobby-seats').innerHTML = data.players.map((p, i) => `<div class="seat"><strong>席 ${i+1}</strong>${p ? `<div>${escapeHtml(p.name)}${p.isHost?' 👑':''}</div><div class="muted">参加済み</div>` : '<div>空席</div><div class="muted">ゲーム開始時にCPU</div>'}</div>`).join('');
+  $('start-btn').hidden = !data.isHost;
+  $('host-note').textContent = data.isHost ? 'あなたはホストです。いつでも開始できます。' : 'ホストがゲームを開始するまでお待ちください。';
+  $('game-code').textContent = data.code;
+}
+function renderGame(state) {
+  showScreen('game');
+  $('game-code').textContent = state.code;
+  $('deck-count').textContent = state.deckCount;
+  $('round-count').textContent = state.roundCount;
+  const active = state.players[state.currentPlayerIndex];
+  $('turnline').textContent = state.status === 'finished' ? 'ゲーム終了' : `ラウンド ${state.roundCount}：${active?.name || ''} のターン`;
+  $('players').innerHTML = state.players.map(p => {
+    const isMe = p.id === state.myId;
+    const isCurrent = p.id === state.currentPlayerIndex;
+    const coinBits = [p.goldCoins ? `🥇金×${p.goldCoins}` : '', p.silverCoins ? `⚪銀×${p.silverCoins}` : '', p.brownCoins ? `🟤銅×${p.brownCoins}` : ''].filter(Boolean).join(' ');
+    const handArea = isMe
+      ? `<div class="hand-line"><strong>あなたの手札（${p.hand.length}枚）</strong></div><div class="cards">${p.hand.map(cardHtml).join('') || '<span class="muted">手札なし</span>'}</div>`
+      : `<div class="hand-line"><strong>手札</strong><span>${p.handCount}枚（非公開）</span></div>`;
+    return `<div class="player-area ${isCurrent?'current':''} ${isMe?'mine':''}">
+      <div class="area-head"><div><h3>${escapeHtml(p.name)}${isMe?'（あなた）':''}${p.isCpu?' 🤖':''}</h3><div class="muted">持ち点：<strong class="score">${p.score}点</strong>${!p.isCpu&&!p.connected?' ・切断中（CPU代行）':''}</div></div><div class="coins">${escapeHtml(coinBits)}</div></div>
+      ${handArea}
+      <div class="zone-row" style="margin-top:8px">
+        <div class="zone"><div class="zone-title">オープン領域（${p.openPairs.length}組）</div><div class="cards">${p.openPairs.map(pairHtml).join('') || '<span class="muted">なし</span>'}</div></div>
+        <div class="zone"><div class="zone-title">捨て札（${p.discardPile.length}枚・右端が最新）</div><div class="cards">${p.discardPile.map(cardHtml).join('') || '<span class="muted">なし</span>'}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+  renderActions(state);
+  renderBreak(state);
+  renderLogs(state.logs || []);
+  if (state.status === 'finished') {
+    $('result-panel').hidden = false;
+    $('result-list').innerHTML = (state.result || []).map(r => `<div><strong>${r.rank}位</strong>　${escapeHtml(r.name)}：${r.score}点</div>`).join('');
+  } else {
+    $('result-panel').hidden = true;
+  }
+}
+function renderActions(s) {
+  const wrap = $('action-content');
+  wrap.innerHTML = '';
+  if (s.status === 'finished') { $('actions').hidden = true; return; }
+  $('actions').hidden = false;
+  const isMyTurn = s.currentPlayerIndex === s.myId;
+  if (!isMyTurn) {
+    wrap.innerHTML = `<span class="muted">${escapeHtml(s.players[s.currentPlayerIndex]?.name || '')} の手番です。あなたの手番までお待ちください。</span>`;
+    return;
+  }
+  const addButton = (label, type, extra={}, cls='') => {
+    const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls;
+    b.addEventListener('click', () => act(type, extra)); wrap.appendChild(b); return b;
+  };
+  if (s.turnPhase === 'drawChoice') {
+    addButton('カードを1枚引く（ドロー）', 'draw', {}, 'primary');
+    (s.catchCandidates || []).forEach(c => {
+      addButton(`キャッチ！ ${c.targetName} の ${cardLabel(c.targetCard)} ／ ${c.yakuList.join('、')}・${c.damage}点ダメージ`, 'catch', { candidateId:c.id }, 'win');
+    });
+  } else if (s.turnPhase === 'main') {
+    wrap.insertAdjacentHTML('beforeend', '<div style="width:100%;font-weight:800;color:#ffeb3b">ペアをオープンするか、役が完成していればコネクト、最後に手札を1枚捨てます。</div>');
+    const seen = new Set();
+    (s.openCandidates || []).forEach(c => {
+      const key = [cardLabel(c.card1), cardLabel(c.card2)].sort().join('|');
+      if (seen.has(key)) return; seen.add(key);
+      addButton(`オープン：${cardLabel(c.card1)} ＋ ${cardLabel(c.card2)}`, 'open', { i:c.i, j:c.j }, 'primary');
+    });
+    (s.connectCandidates || []).forEach(c => {
+      addButton(`コネクト：${cardLabel(s.players[s.myId].hand[c.i])} ＋ ${cardLabel(s.players[s.myId].hand[c.j])} ／ ${c.yakuList.join('、')}（${c.damage}点）`, 'connect', { candidateId:c.id }, 'win');
+    });
+    const hand = s.players[s.myId].hand || [];
+    if (hand.length <= 1) addButton('パス（手札1枚以下）', 'pass', {}, 'orange');
+    else {
+      const note = document.createElement('div'); note.className='muted'; note.style.width='100%'; note.textContent='捨てるカードを選択してください（選ぶと手番が終了します）。'; wrap.appendChild(note);
+      hand.forEach((c, index) => addButton(`捨てる：${cardLabel(c)}`, 'discard', { index }));
+    }
+  } else if (s.turnPhase === 'skillChoice') {
+    wrap.insertAdjacentHTML('beforeend', '<div style="width:100%">2組目のペアをオープンしたため、特殊能力を1つ選べます。</div>');
+    const grid = document.createElement('div'); grid.className='skill-grid'; grid.style.width='100%';
+    (s.skillOptions || []).forEach(skill => {
+      const b = document.createElement('button'); b.disabled = !skill.enabled;
+      b.innerHTML = `${escapeHtml(skill.name)}<small>${escapeHtml(skill.desc)}${skill.reason ? `（${escapeHtml(skill.reason)}）` : ''}</small>`;
+      b.addEventListener('click', () => act('chooseSkill', { skillId:skill.id })); grid.appendChild(b);
+    });
+    wrap.appendChild(grid);
+    addButton('特殊能力を使用しない', 'skipSkill', {}, 'subtle');
+  } else if (s.turnPhase === 'skillTarget') {
+    wrap.insertAdjacentHTML('beforeend', '<div style="width:100%">特殊能力の対象を選んでください。</div>');
+    (s.targetOptions || []).forEach(t => addButton(`${t.name}（持ち点${t.score}点）`, 'skillTarget', { targetId:t.id }));
+    addButton('戻る（能力を選び直す）', 'cancelSkillSelection', {}, 'subtle');
+  } else if (s.turnPhase === 'skillPair') {
+    wrap.insertAdjacentHTML('beforeend', `<div style="width:100%">${escapeHtml(s.skillTargetName)} の対象ペアを選んでください（${s.skillId==='break'?'ブレイク':'チェンジ'}）。</div>`);
+    (s.skillPairOptions || []).forEach(item => addButton(`${item.index+1}組目：${formatPairs([item.pair])}`, 'skillPair', { pairIdx:item.index }, s.skillId==='break'?'win':''));
+  } else if (s.turnPhase === 'cpu') {
+    wrap.innerHTML = '<span class="muted">CPUが考えています…</span>';
+  } else if (s.turnPhase === 'breakDefense') {
+    wrap.innerHTML = '<span class="muted">ブレイクへの対応を待っています。</span>';
+  } else {
+    wrap.innerHTML = '<span class="muted">処理中です。</span>';
+  }
+}
+function renderBreak(s) {
+  const box = $('break-panel');
+  if (!s.pendingBreak) { box.hidden = true; box.innerHTML=''; return; }
+  box.hidden = false;
+  const p = s.pendingBreak;
+  if (p.waitingForMe) {
+    box.innerHTML = `<h2>ブレイクを受けました</h2><p>${escapeHtml(s.players[p.attackerId]?.name || '')} により、ペア ${formatPairs([p.pair])} が破壊されました。捨て札に置く順番を選んでください。</p><div class="row"><button id="break-order-0" class="primary">${cardLabel(p.pair[0])} → ${cardLabel(p.pair[1])}</button><button id="break-order-1" class="primary">${cardLabel(p.pair[1])} → ${cardLabel(p.pair[0])}</button></div>`;
+    $('break-order-0').addEventListener('click', () => act('breakDefense', { order:0 }));
+    $('break-order-1').addEventListener('click', () => act('breakDefense', { order:1 }));
+  } else {
+    box.innerHTML = `<h2>ブレイク対応待ち</h2><p>${escapeHtml(s.players[p.targetId]?.name || '')} が捨て札に置く順番を選んでいます。</p>`;
+  }
+}
+function renderLogs(logs) {
+  const box = $('log-box');
+  const oldScroll = box.scrollTop;
+  box.innerHTML = logs.map(entry => `<div class="log-msg ${entry.type==='important'?'log-important':entry.type==='skill'?'log-skill':''}">${escapeHtml(entry.text)}</div>`).join('');
+  box.scrollTop = box.scrollHeight > oldScroll ? box.scrollHeight : oldScroll;
+}
+</script>
+</body>
+</html>
