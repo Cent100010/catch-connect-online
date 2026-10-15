@@ -49,9 +49,16 @@ h3 { margin:0; font-size:15px; }
 .card { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; width:30px; height:43px; flex:0 0 auto; border-radius:4px; background:#fff; color:#111; border:1px solid #ccc; box-shadow:0 1px 3px #0007; font-size:13px; line-height:1.05; font-weight:800; }
 .card.red { color:#ce1010; }
 .card.back { background:repeating-linear-gradient(45deg,#3a4b5c 0,#3a4b5c 6px,#243746 6px,#243746 12px); border:1px solid #fff; }
+.hand-cards { gap:5px; }
+.hand-cards .card { width:42px; height:60px; font-size:16px; border-radius:5px; }
 .card.hand-discardable { cursor:pointer; border:2px solid #ffeb3b; transition:transform .12s, box-shadow .12s; }
 .card.hand-discardable:hover, .card.hand-discardable:focus { transform:translateY(-4px); box-shadow:0 0 0 2px #ffeb3b, 0 4px 8px #0008; outline:none; }
 .open-pair { display:flex; gap:1px; border:1px solid #b1c7b8; border-radius:4px; padding:2px; margin:0 3px 3px 0; width:max-content; max-width:100%; }
+.hand-open-area { width:100%; margin-top:9px; padding:8px; border:1px solid rgba(255,235,59,.38); border-radius:7px; background:rgba(0,0,0,.12); }
+.hand-open-title { font-size:12px; font-weight:800; color:#ffeb3b; margin-bottom:6px; }
+.hand-open-buttons { display:flex; flex-wrap:wrap; gap:6px; }
+button.open-hand-btn { padding:7px 9px; font-size:12px; background:#2196f3; color:#fff; text-align:center; }
+.hand-open-empty { font-size:12px; color:#c9d7ce; }
 #actions { margin-top:12px; }
 #actions h2 { color:var(--gold); }
 .action-list { display:flex; flex-wrap:wrap; gap:7px; }
@@ -72,6 +79,7 @@ h3 { margin:0; font-size:15px; }
  .zone-row { grid-template-columns:1fr 1fr; }
  .zone { max-height:145px; }
  .card { width:26px; height:37px; font-size:11px; }
+ .hand-cards .card { width:36px; height:51px; font-size:14px; }
  .skill-grid { grid-template-columns:1fr; }
  button { padding:10px; }
 }
@@ -146,7 +154,7 @@ function cardHtml(c, discardIndex = null) {
     : '';
   return `<div class="card ${red?'red':''}${canClickToDiscard?' hand-discardable':''}"${interactiveAttrs}><span>${escapeHtml(c.suit)}</span><span>${escapeHtml(c.rank)}</span></div>`;
 }
-function pairHtml(pair) { return `<div class="open-pair">${pair.map(cardHtml).join('')}</div>`; }
+function pairHtml(pair) { return `<div class="open-pair">${pair.map(card => cardHtml(card)).join('')}</div>`; }
 function formatPairs(pairs) { return (pairs || []).map(p => `[${cardLabel(p[0])}, ${cardLabel(p[1])}]`).join(' '); }
 function showScreen(screen) {
   $('home').hidden = screen !== 'home';
@@ -191,17 +199,31 @@ function renderGame(state) {
     const isMe = p.id === state.myId;
     const isCurrent = p.id === state.currentPlayerIndex;
     const coinBits = [p.goldCoins ? `🥇金×${p.goldCoins}` : '', p.silverCoins ? `⚪銀×${p.silverCoins}` : '', p.brownCoins ? `🟤銅×${p.brownCoins}` : ''].filter(Boolean).join(' ');
-    const canDiscardByClick = isMe && state.status !== 'finished'
-      && state.currentPlayerIndex === state.myId && state.turnPhase === 'main' && p.hand.length > 1;
+    const isMyMainPhase = isMe && state.status !== 'finished'
+      && state.currentPlayerIndex === state.myId && state.turnPhase === 'main';
+    const canDiscardByClick = isMyMainPhase && p.hand.length > 1;
+    const openButtons = [];
+    if (isMyMainPhase) {
+      const seenOpenPairs = new Set();
+      (state.openCandidates || []).forEach(candidate => {
+        const key = [cardLabel(candidate.card1), cardLabel(candidate.card2)].sort().join('|');
+        if (seenOpenPairs.has(key)) return;
+        seenOpenPairs.add(key);
+        openButtons.push(`<button type="button" class="open-hand-btn" data-open-i="${candidate.i}" data-open-j="${candidate.j}">オープン：${escapeHtml(cardLabel(candidate.card1))} ＋ ${escapeHtml(cardLabel(candidate.card2))}</button>`);
+      });
+    }
+    const handOpenArea = isMyMainPhase
+      ? `<div class="hand-open-area"><div class="hand-open-title">オープン</div><div class="hand-open-buttons">${openButtons.length ? openButtons.join('') : '<span class="hand-open-empty">オープンできるペアはありません</span>'}</div></div>`
+      : '';
     const handArea = isMe
-      ? `<div class="hand-line"><strong>あなたの手札（${p.hand.length}枚）</strong>${canDiscardByClick ? '<span class="muted">黄色い縁のカードをクリックすると捨てられます</span>' : ''}</div><div class="cards">${p.hand.map((card, index) => cardHtml(card, canDiscardByClick ? index : null)).join('') || '<span class="muted">手札なし</span>'}</div>`
+      ? `<div class="hand-line"><strong>あなたの手札（${p.hand.length}枚）</strong>${canDiscardByClick ? '<span class="muted">捨てるカードをクリック</span>' : ''}</div><div class="cards hand-cards">${p.hand.map((card, index) => cardHtml(card, canDiscardByClick ? index : null)).join('') || '<span class="muted">手札なし</span>'}</div>${handOpenArea}`
       : `<div class="hand-line"><strong>手札</strong><span>${p.handCount}枚（非公開）</span></div>`;
     return `<div class="player-area ${isCurrent?'current':''} ${isMe?'mine':''}">
       <div class="area-head"><div><h3>${escapeHtml(p.name)}${isMe?'（あなた）':''}${p.isCpu?' 🤖':''}</h3><div class="muted">持ち点：<strong class="score">${p.score}点</strong>${!p.isCpu&&!p.connected?' ・切断中（CPU代行）':''}</div></div><div class="coins">${escapeHtml(coinBits)}</div></div>
       ${handArea}
       <div class="zone-row" style="margin-top:8px">
         <div class="zone"><div class="zone-title">オープン領域（${p.openPairs.length}組）</div><div class="cards">${p.openPairs.map(pairHtml).join('') || '<span class="muted">なし</span>'}</div></div>
-        <div class="zone"><div class="zone-title">捨て札（${p.discardPile.length}枚・右端が最新）</div><div class="cards">${p.discardPile.map(cardHtml).join('') || '<span class="muted">なし</span>'}</div></div>
+        <div class="zone"><div class="zone-title">捨て札（${p.discardPile.length}枚・右端が最新）</div><div class="cards">${p.discardPile.map(card => cardHtml(card)).join('') || '<span class="muted">なし</span>'}</div></div>
       </div>
     </div>`;
   }).join('');
@@ -222,6 +244,19 @@ function renderGame(state) {
         event.preventDefault();
         discardClickedCard();
       }
+    });
+  });
+  $('players').querySelectorAll('[data-open-i][data-open-j]').forEach(button => {
+    button.addEventListener('click', () => {
+      const current = latestState;
+      if (!current || current.status === 'finished' || current.turnPhase !== 'main'
+          || current.currentPlayerIndex !== current.myId) return;
+      const i = Number(button.dataset.openI);
+      const j = Number(button.dataset.openJ);
+      const hand = current.players?.[current.myId]?.hand;
+      if (!hand || !Number.isInteger(i) || !Number.isInteger(j)
+          || i < 0 || j < 0 || i >= hand.length || j >= hand.length || i === j) return;
+      act('open', { i, j });
     });
   });
   renderActions(state);
@@ -254,13 +289,7 @@ function renderActions(s) {
       addButton(`キャッチ！ ${c.targetName} の ${cardLabel(c.targetCard)} ／ ${c.yakuList.join('、')}・${c.damage}点ダメージ`, 'catch', { candidateId:c.id }, 'win');
     });
   } else if (s.turnPhase === 'main') {
-    wrap.insertAdjacentHTML('beforeend', '<div style="width:100%;font-weight:800;color:#ffeb3b">ペアをオープンするか、役が完成していればコネクト、最後に手札を1枚捨てます。</div>');
-    const seen = new Set();
-    (s.openCandidates || []).forEach(c => {
-      const key = [cardLabel(c.card1), cardLabel(c.card2)].sort().join('|');
-      if (seen.has(key)) return; seen.add(key);
-      addButton(`オープン：${cardLabel(c.card1)} ＋ ${cardLabel(c.card2)}`, 'open', { i:c.i, j:c.j }, 'primary');
-    });
+    wrap.insertAdjacentHTML('beforeend', '<div style="width:100%;font-weight:800;color:#ffeb3b">オープンは手札のすぐ下のボタンから行えます。役が完成していればコネクトし、最後に手札を1枚捨ててください。</div>');
     (s.connectCandidates || []).forEach(c => {
       addButton(`コネクト：${cardLabel(s.players[s.myId].hand[c.i])} ＋ ${cardLabel(s.players[s.myId].hand[c.j])} ／ ${c.yakuList.join('、')}（${c.damage}点）`, 'connect', { candidateId:c.id }, 'win');
     });
