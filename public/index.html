@@ -71,6 +71,35 @@ button.open-hand-btn { padding:7px 9px; font-size:12px; background:#2196f3; colo
 .log-important { color:var(--gold); font-weight:800; }
 .log-skill { color:#80deea; font-weight:800; }
 #result-list { line-height:1.9; }
+
+/* いつでも開けるルールブック */
+.rules-fab { position:fixed; right:14px; bottom:max(14px, env(safe-area-inset-bottom)); z-index:900; background:#ff9800; color:#fff; border:2px solid rgba(255,255,255,.8); border-radius:999px; padding:11px 16px; box-shadow:0 3px 14px #0008; font-size:14px; }
+.rules-modal { display:none; position:fixed; inset:0; z-index:1200; padding:12px; background:rgba(0,0,0,.78); align-items:center; justify-content:center; }
+.rules-modal.open { display:flex; }
+.rules-dialog { display:flex; flex-direction:column; width:min(760px, 100%); max-height:90vh; overflow:hidden; background:#17231b; color:#fff; border:2px solid #ff9800; border-radius:12px; box-shadow:0 12px 40px #000b; }
+.rules-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; background:#26372b; border-bottom:1px solid rgba(255,255,255,.18); }
+.rules-header h2 { margin:0; color:#ffeb3b; }
+.rules-close { flex:0 0 auto; background:#ff9800; color:#fff; }
+.rules-body { overflow-y:auto; overscroll-behavior:contain; padding:14px 16px 18px; line-height:1.6; }
+.rules-body h3 { margin:17px 0 6px; padding-bottom:4px; font-size:15px; color:#80deea; border-bottom:1px solid rgba(255,255,255,.17); }
+.rules-body h3:first-child { margin-top:0; }
+.rules-body p { margin:6px 0 10px; }
+.rules-body ul, .rules-body ol { padding-left:23px; margin:6px 0 12px; }
+.rules-body li { margin:4px 0; }
+.rules-table-wrap { width:100%; overflow-x:auto; margin:8px 0 12px; }
+.rules-table { width:100%; min-width:490px; border-collapse:collapse; font-size:12px; }
+.rules-table th, .rules-table td { padding:7px 8px; text-align:left; vertical-align:top; border:1px solid #59665d; }
+.rules-table th { background:#344638; color:#ffeb3b; white-space:nowrap; }
+.rules-footer { display:flex; justify-content:flex-end; padding:10px 14px; border-top:1px solid rgba(255,255,255,.18); background:#26372b; }
+@media (max-width:700px) {
+ .rules-fab { right:9px; bottom:max(9px, env(safe-area-inset-bottom)); padding:10px 13px; font-size:13px; }
+ .rules-modal { padding:7px; }
+ .rules-dialog { max-height:94vh; }
+ .rules-header { padding:10px; }
+ .rules-header h2 { font-size:16px; }
+ .rules-body { padding:12px; font-size:13px; }
+}
+
 @media (max-width:700px) {
  body { padding:7px; }
  .form-grid { grid-template-columns:1fr; }
@@ -130,12 +159,130 @@ button.open-hand-btn { padding:7px 9px; font-size:12px; background:#2196f3; colo
     <section class="panel"><h2>ゲームログ</h2><div id="log-box"></div></section>
   </section>
 </div>
+
+<button type="button" id="open-rules" class="rules-fab" aria-haspopup="dialog" aria-controls="rules-modal">📖 ルールブック</button>
+<div id="rules-modal" class="rules-modal" role="dialog" aria-modal="true" aria-labelledby="rules-title" aria-hidden="true">
+  <div class="rules-dialog">
+    <div class="rules-header">
+      <h2 id="rules-title">📖 キャッチ＆コネクト 公式ルールブック</h2>
+      <button type="button" id="close-rules" class="rules-close">閉じる ✕</button>
+    </div>
+    <div class="rules-body">
+      <h3>1. ゲーム概要</h3>
+      <p>4人対戦のカードゲームです。手札からペアを作って場にオープンし、4組のペアで役を完成させてアガリを目指します。誰かの持ち点が0点以下になるとゲーム終了となり、最終的に持ち点が最も高いプレイヤーが勝者です。</p>
+      <p>オンライン対戦では、参加していない席はCPUが担当します。</p>
+
+      <h3>2. カードとペアの条件</h3>
+      <p>カードは4スート（♠️、♣️、❤️、♦️）×8ランク（A、2〜8）を各2枚、合計64枚使用します。同じスートのカード2枚が、次のいずれかを満たすとペアになります。</p>
+      <ul>
+        <li><strong>同じ数字：</strong>例 ♠️3 ＋ ♠️3</li>
+        <li><strong>隣り合う数字：</strong>例 ❤️4 ＋ ❤️5</li>
+        <li><strong>Aと8：</strong>例 ♦️A ＋ ♦️8（Aと8は隣り合う扱い）</li>
+      </ul>
+      <p>各ラウンドの開始時、各プレイヤーは手札を5枚受け取ります。</p>
+
+      <h3>3. ターンの流れ</h3>
+      <ol>
+        <li><strong>ドローフェイズ：</strong>山札から1枚引きます。自分が場にペアを3組オープンしており、相手の最新捨て札と手札で役を完成できる場合は、ドローの代わりに「キャッチ」できます。金コインを持っている場合、アガるには事前にペアを4組オープンしている必要があります。</li>
+        <li><strong>メインフェイズ：</strong>手札のペアをオープンできます。オープンすると山札から1枚引きます。2組目のペアをオープンしてカードを引いたときは、特殊能力を1つ選べます。</li>
+        <li><strong>コネクト：</strong>必要な数のペアが場にあり、手札のペアを加えた4組で1点以上の役が成立していれば、コネクトしてアガれます。</li>
+        <li><strong>手番終了：</strong>最後に手札を1枚捨てます。手札が1枚以下の場合はパスします。オンライン版では、捨てたい手札をクリックすると捨てられます。</li>
+      </ol>
+      <p><strong>注意：</strong>役が1点以上成立していないとアガれません。捨て札のうち、キャッチの対象になるのはそのプレイヤーの最新の1枚です。</p>
+
+      <h3>4. コインの効果</h3>
+      <div class="rules-table-wrap"><table class="rules-table">
+        <thead><tr><th>コイン</th><th>効果</th></tr></thead>
+        <tbody>
+          <tr><td><strong>金コイン 🥇</strong></td><td>持っているプレイヤーは、ペアを4組場にオープンしていないとアガれません。既に金コインを持つ相手にはバインドを使えません。</td></tr>
+          <tr><td><strong>銀コイン ⚪</strong></td><td>持っているプレイヤーは、コネクト時の役の合計点が2倍になります。</td></tr>
+          <tr><td><strong>銅コイン 🟤</strong></td><td>他のプレイヤーがアガったとき、勝者以外は銅コイン1枚につき追加で2点を失います。</td></tr>
+        </tbody>
+      </table></div>
+      <p>コインの効果はラウンド終了時に清算され、次のラウンドにコインは持ち越されません。</p>
+
+      <h3>5. 特殊能力</h3>
+      <p>2組目のペアをオープンしてカードを引いたとき、以下の能力から1つ選べます。</p>
+      <div class="rules-table-wrap"><table class="rules-table">
+        <thead><tr><th>能力</th><th>効果</th></tr></thead>
+        <tbody>
+          <tr><td><strong>ブースト</strong></td><td>山札からカードを1枚引く。</td></tr>
+          <tr><td><strong>ファイト</strong></td><td>銀コインを1枚得る。銀コインを持っている間、コネクトの点数が2倍。</td></tr>
+          <tr><td><strong>チェンジ</strong></td><td>相手の公開ペア1組と、自分の2組目のペアを交換する。</td></tr>
+          <tr><td><strong>スキップ</strong></td><td>自分のターンを終了し、次のプレイヤーに手番を移す。</td></tr>
+          <tr><td><strong>ブレイク</strong></td><td>ペアを3組以上オープンし、捨て札が2枚以上ある相手のペア1組を破壊する。対象は破壊された2枚を捨て札に置く順番を選び、捨て札の最も古いカードを2枚引く。</td></tr>
+          <tr><td><strong>バインド</strong></td><td>金コインを持っていない相手1人に金コインを置く。</td></tr>
+          <tr><td><strong>トラップ</strong></td><td>相手1人に銅コインを1枚置く。</td></tr>
+          <tr><td><strong>ショット</strong></td><td>持ち点が2点以上の相手1人の持ち点を1点減らす。</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>6. 役一覧（アガリに使用する4組・8枚）</h3>
+      <div class="rules-table-wrap"><table class="rules-table">
+        <thead><tr><th>役名</th><th>条件</th><th>点数</th></tr></thead>
+        <tbody>
+          <tr><td>ワンナンバー</td><td>8枚すべて同じ数字</td><td>100点</td></tr>
+          <tr><td>フラッシュ</td><td>8枚すべて同じスート</td><td>4点</td></tr>
+          <tr><td>ストレート</td><td>A〜8がすべて1枚ずつ含まれる</td><td>4点</td></tr>
+          <tr><td>フォーマッチ</td><td>4組すべてが同じ数字・同じスートのペア</td><td>4点</td></tr>
+          <tr><td>ツーナンバー</td><td>数字が2種類</td><td>4点</td></tr>
+          <tr><td>ブラックマーク</td><td>♠️と♣️のみ</td><td>2点</td></tr>
+          <tr><td>レッドマーク</td><td>❤️と♦️のみ</td><td>2点</td></tr>
+          <tr><td>スリーマッチ</td><td>同じ数字・同じスートのペアが3組</td><td>2点</td></tr>
+          <tr><td>スリーナンバー</td><td>数字が3種類</td><td>2点</td></tr>
+          <tr><td>フォーマーク</td><td>♠️♣️❤️♦️がすべて含まれる</td><td>1点</td></tr>
+          <tr><td>ツーマッチ</td><td>同じ数字・同じスートのペアが2組</td><td>1点</td></tr>
+          <tr><td>フォーナンバー</td><td>数字が4種類</td><td>1点</td></tr>
+          <tr><td>ワンマッチ</td><td>同じ数字・同じスートのペアが1組</td><td>キャッチ時のみ1点</td></tr>
+          <tr><td>ワンワンエイト</td><td>Aと8のペアが1組のみ存在</td><td>キャッチ時のみ1点</td></tr>
+        </tbody>
+      </table></div>
+      <p>成立した役の点数は合計されます（役によっては同時に成立しないものもあります）。</p>
+
+      <h3>7. ダメージとゲーム終了</h3>
+      <ul>
+        <li><strong>獲得点数：</strong>成立した役の合計点。コネクト時に銀コインを持っていれば2倍。</li>
+        <li><strong>キャッチ：</strong>振り込んだ相手1人が、獲得点数の3倍のダメージを受けます。</li>
+        <li><strong>コネクト：</strong>自分以外の全員が、獲得点数と同じダメージを受けます。</li>
+        <li><strong>トラップ精算：</strong>勝者以外は、銅コイン1枚につき追加で2点を失います。</li>
+        <li><strong>ゲーム終了：</strong>ダメージ精算後、誰かの持ち点が0点以下になったらゲーム終了です。持ち点が最も高いプレイヤーが勝者となります。</li>
+      </ul>
+      <p class="muted">遊び方が分からなくなったら、右下の「📖 ルールブック」からいつでも確認できます。</p>
+    </div>
+    <div class="rules-footer"><button type="button" id="close-rules-footer" class="rules-close">閉じる</button></div>
+  </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
 let latestLobby = null;
 let latestState = null;
 const $ = id => document.getElementById(id);
+
+const rulesModal = $('rules-modal');
+function openRules() {
+  rulesModal.classList.add('open');
+  rulesModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  $('close-rules').focus();
+}
+function closeRules() {
+  rulesModal.classList.remove('open');
+  rulesModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  $('open-rules').focus();
+}
+$('open-rules').addEventListener('click', openRules);
+$('close-rules').addEventListener('click', closeRules);
+$('close-rules-footer').addEventListener('click', closeRules);
+rulesModal.addEventListener('click', event => {
+  if (event.target === rulesModal) closeRules();
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && rulesModal.classList.contains('open')) closeRules();
+});
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
