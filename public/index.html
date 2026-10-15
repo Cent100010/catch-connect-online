@@ -49,6 +49,8 @@ h3 { margin:0; font-size:15px; }
 .card { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; width:30px; height:43px; flex:0 0 auto; border-radius:4px; background:#fff; color:#111; border:1px solid #ccc; box-shadow:0 1px 3px #0007; font-size:13px; line-height:1.05; font-weight:800; }
 .card.red { color:#ce1010; }
 .card.back { background:repeating-linear-gradient(45deg,#3a4b5c 0,#3a4b5c 6px,#243746 6px,#243746 12px); border:1px solid #fff; }
+.card.hand-discardable { cursor:pointer; border:2px solid #ffeb3b; transition:transform .12s, box-shadow .12s; }
+.card.hand-discardable:hover, .card.hand-discardable:focus { transform:translateY(-4px); box-shadow:0 0 0 2px #ffeb3b, 0 4px 8px #0008; outline:none; }
 .open-pair { display:flex; gap:1px; border:1px solid #b1c7b8; border-radius:4px; padding:2px; margin:0 3px 3px 0; width:max-content; max-width:100%; }
 #actions { margin-top:12px; }
 #actions h2 { color:var(--gold); }
@@ -135,10 +137,14 @@ function tell(message, isError=false) {
 }
 function act(type, extra={}) { socket.emit('action', { type, ...extra }); }
 function cardLabel(c) { return c ? `${c.suit}${c.rank}` : ''; }
-function cardHtml(c) {
+function cardHtml(c, discardIndex = null) {
   if (!c) return '';
   const red = c.suit.includes('❤️') || c.suit.includes('♦️');
-  return `<div class="card ${red?'red':''}"><span>${escapeHtml(c.suit)}</span><span>${escapeHtml(c.rank)}</span></div>`;
+  const canClickToDiscard = Number.isInteger(discardIndex) && discardIndex >= 0;
+  const interactiveAttrs = canClickToDiscard
+    ? ` data-discard-index="${discardIndex}" role="button" tabindex="0" aria-label="${escapeHtml(cardLabel(c))}を捨てる" title="クリックしてこのカードを捨てる"`
+    : '';
+  return `<div class="card ${red?'red':''}${canClickToDiscard?' hand-discardable':''}"${interactiveAttrs}><span>${escapeHtml(c.suit)}</span><span>${escapeHtml(c.rank)}</span></div>`;
 }
 function pairHtml(pair) { return `<div class="open-pair">${pair.map(cardHtml).join('')}</div>`; }
 function formatPairs(pairs) { return (pairs || []).map(p => `[${cardLabel(p[0])}, ${cardLabel(p[1])}]`).join(' '); }
@@ -185,8 +191,10 @@ function renderGame(state) {
     const isMe = p.id === state.myId;
     const isCurrent = p.id === state.currentPlayerIndex;
     const coinBits = [p.goldCoins ? `🥇金×${p.goldCoins}` : '', p.silverCoins ? `⚪銀×${p.silverCoins}` : '', p.brownCoins ? `🟤銅×${p.brownCoins}` : ''].filter(Boolean).join(' ');
+    const canDiscardByClick = isMe && state.status !== 'finished'
+      && state.currentPlayerIndex === state.myId && state.turnPhase === 'main' && p.hand.length > 1;
     const handArea = isMe
-      ? `<div class="hand-line"><strong>あなたの手札（${p.hand.length}枚）</strong></div><div class="cards">${p.hand.map(cardHtml).join('') || '<span class="muted">手札なし</span>'}</div>`
+      ? `<div class="hand-line"><strong>あなたの手札（${p.hand.length}枚）</strong>${canDiscardByClick ? '<span class="muted">黄色い縁のカードをクリックすると捨てられます</span>' : ''}</div><div class="cards">${p.hand.map((card, index) => cardHtml(card, canDiscardByClick ? index : null)).join('') || '<span class="muted">手札なし</span>'}</div>`
       : `<div class="hand-line"><strong>手札</strong><span>${p.handCount}枚（非公開）</span></div>`;
     return `<div class="player-area ${isCurrent?'current':''} ${isMe?'mine':''}">
       <div class="area-head"><div><h3>${escapeHtml(p.name)}${isMe?'（あなた）':''}${p.isCpu?' 🤖':''}</h3><div class="muted">持ち点：<strong class="score">${p.score}点</strong>${!p.isCpu&&!p.connected?' ・切断中（CPU代行）':''}</div></div><div class="coins">${escapeHtml(coinBits)}</div></div>
@@ -197,6 +205,25 @@ function renderGame(state) {
       </div>
     </div>`;
   }).join('');
+  // During the player's main phase, clicking a card in their displayed hand discards it.
+  $('players').querySelectorAll('[data-discard-index]').forEach(cardEl => {
+    const discardClickedCard = () => {
+      const current = latestState;
+      const myHand = current?.players?.[current.myId]?.hand;
+      if (!current || current.status === 'finished' || current.turnPhase !== 'main'
+          || current.currentPlayerIndex !== current.myId || !myHand || myHand.length <= 1) return;
+      const index = Number(cardEl.dataset.discardIndex);
+      if (!Number.isInteger(index) || index < 0 || index >= myHand.length) return;
+      act('discard', { index });
+    };
+    cardEl.addEventListener('click', discardClickedCard);
+    cardEl.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        discardClickedCard();
+      }
+    });
+  });
   renderActions(state);
   renderBreak(state);
   renderLogs(state.logs || []);
@@ -240,8 +267,9 @@ function renderActions(s) {
     const hand = s.players[s.myId].hand || [];
     if (hand.length <= 1) addButton('パス（手札1枚以下）', 'pass', {}, 'orange');
     else {
-      const note = document.createElement('div'); note.className='muted'; note.style.width='100%'; note.textContent='捨てるカードを選択してください（選ぶと手番が終了します）。'; wrap.appendChild(note);
-      hand.forEach((c, index) => addButton(`捨てる：${cardLabel(c)}`, 'discard', { index }));
+      const note = document.createElement('div'); note.className='muted'; note.style.width='100%';
+      note.textContent='手番の最後に、上の自分の手札から捨てるカードをクリックしてください。クリックすると手番が終了します。';
+      wrap.appendChild(note);
     }
   } else if (s.turnPhase === 'skillChoice') {
     wrap.insertAdjacentHTML('beforeend', '<div style="width:100%">2組目のペアをオープンしたため、特殊能力を1つ選べます。</div>');
