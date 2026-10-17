@@ -34,7 +34,11 @@ h3 { margin:0; font-size:15px; }
 .seat strong { display:block; margin-bottom:4px; }
 #topbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; }
 #turnline { color:var(--gold); font-weight:800; }
-#players { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+/* ゲーム情報：通常表示は縦積み、スマホの横向きでは左右2カラム */
+#game-layout { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; align-items:start; }
+#players { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; min-width:0; }
+#game-sidebar { display:flex; flex-direction:column; gap:10px; min-width:0; }
+#log-panel { min-width:0; }
 .player-area { padding:10px; margin-bottom:0; min-width:0; background:rgba(0,0,0,.25); border:1px solid var(--line); border-radius:9px; }
 .player-area.current { outline:3px solid var(--gold); background:rgba(255,235,59,.09); }
 .player-area.mine { border-color:#80cbc4; }
@@ -55,10 +59,13 @@ h3 { margin:0; font-size:15px; }
 .card.hand-discardable:hover, .card.hand-discardable:focus { transform:translateY(-4px); box-shadow:0 0 0 2px #ffeb3b, 0 4px 8px #0008; outline:none; }
 .open-pair { display:flex; gap:1px; border:1px solid #b1c7b8; border-radius:4px; padding:2px; margin:0 3px 3px 0; width:max-content; max-width:100%; }
 .hand-open-area { width:100%; margin-top:9px; padding:8px; border:1px solid rgba(255,235,59,.38); border-radius:7px; background:rgba(0,0,0,.12); }
-.hand-open-title { font-size:12px; font-weight:800; color:#ffeb3b; margin-bottom:6px; }
 .hand-open-buttons { display:flex; flex-wrap:wrap; gap:6px; }
 button.open-hand-btn { padding:7px 9px; font-size:12px; background:#2196f3; color:#fff; text-align:center; }
 .hand-open-empty { font-size:12px; color:#c9d7ce; }
+.win-opportunity-notice { width:100%; margin:6px 0; padding:6px 8px; border-radius:6px; font-size:12px; line-height:1.4; font-weight:800; }
+.connect-opportunity { background:rgba(233,30,99,.18); border:1px solid #ff80ab; color:#fff; }
+.catch-opportunity { background:rgba(255,152,0,.19); border:1px solid #ffca65; color:#fff3d6; }
+.skill-timing-notice { width:100%; margin:6px 0; padding:7px 9px; border-radius:6px; font-size:12px; line-height:1.4; font-weight:800; background:rgba(33,150,243,.18); border:1px solid #80d8ff; color:#eaf8ff; }
 #actions { margin-top:12px; }
 #actions h2 { color:var(--gold); }
 .action-list { display:flex; flex-wrap:wrap; gap:7px; }
@@ -101,22 +108,93 @@ button.open-hand-btn { padding:7px 9px; font-size:12px; background:#2196f3; colo
 }
 
 @media (max-width:700px) {
- body { padding:7px; }
+ body { padding:6px; }
  .form-grid { grid-template-columns:1fr; }
  .seats { grid-template-columns:repeat(2,minmax(0,1fr)); }
- #players { grid-template-columns:1fr; }
- .zone-row { grid-template-columns:1fr 1fr; }
- .zone { max-height:145px; }
- .card { width:26px; height:37px; font-size:11px; }
- .hand-cards .card { width:36px; height:51px; font-size:14px; }
  .skill-grid { grid-template-columns:1fr; }
- button { padding:10px; }
+ button { padding:9px 10px; }
+ h1 { font-size:20px; }
+ .panel { padding:9px; margin-bottom:8px; }
+}
+
+/* スマホ縦向き：プレイヤー情報を2列×2段、その下にコマンドとログ */
+@media (max-width:700px) and (orientation:portrait) {
+ body { padding:5px; }
+ body.game-screen-active h1 { display:none; }
+ body.game-screen-active #notice { min-height:0; padding:0 2px 3px; font-size:11px; }
+ body.game-screen-active .rules-fab { position:static; inset:auto; z-index:auto; margin-left:auto; align-self:center; padding:6px 8px; font-size:11px; box-shadow:none; }
+ #game-layout { grid-template-columns:minmax(0,1fr); gap:7px; }
+ #players { grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
+ .player-area { padding:6px; }
+ .area-head { gap:4px; padding-bottom:5px; margin-bottom:5px; }
+ .area-head h3 { font-size:12px; overflow-wrap:anywhere; }
+ .score { font-size:12px; }
+ .coins { font-size:10px; }
+ .hand-line { font-size:10px; gap:4px; margin-bottom:5px; }
+ .hand-cards { gap:3px; }
+ .hand-cards .card { width:28px; height:40px; font-size:12px; }
+ .zone-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:4px; margin-top:5px !important; }
+ .zone { min-height:48px; max-height:100px; padding:4px; }
+ .zone-title { font-size:9px; margin-bottom:4px; }
+ .cards { gap:2px; }
+ .card { width:20px; height:29px; font-size:9px; }
+ .open-pair { margin:0 1px 2px 0; padding:1px; }
+ .hand-open-area { margin-top:6px; padding:5px; }
+ .win-opportunity-notice { margin:4px 0; padding:5px; font-size:10px; }
+ button.open-hand-btn { padding:6px; font-size:10px; }
+ #actions { margin-top:0; }
+ #actions h2, #break-panel h2, #result-panel h2, #log-panel h2 { font-size:15px; }
+ #log-box { max-height:180px; font-size:11px; }
+}
+
+/* スマホ横向き：左にプレイヤー4人、右にコマンドとログ */
+@media (max-width:900px) and (orientation:landscape) {
+ body { padding:4px; }
+ body.game-screen-active h1 { display:none; }
+ body.game-screen-active #notice { min-height:0; padding:0 2px 2px; font-size:10px; }
+ body.game-screen-active .rules-fab { position:static; inset:auto; z-index:auto; margin-left:auto; align-self:center; padding:5px 6px; font-size:10px; box-shadow:none; }
+ #topbar { padding:6px 8px; margin-bottom:6px; gap:6px; font-size:12px; }
+ #game-layout {
+   /* コマンド欄を必要最小限にし、プレイヤー情報の表示面積を広げる */
+   grid-template-columns:minmax(0,4.4fr) minmax(140px,.75fr);
+   gap:6px;
+   align-items:stretch;
+ }
+ #players { grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; align-content:start; }
+ .player-area { padding:6px; }
+ .area-head { gap:4px; padding-bottom:4px; margin-bottom:4px; }
+ .area-head h3 { font-size:12px; }
+ .score { font-size:12px; }
+ .coins { font-size:9px; }
+ .hand-line { font-size:10px; gap:3px; margin-bottom:4px; }
+ .hand-cards { gap:3px; }
+ .hand-cards .card { width:27px; height:38px; font-size:11px; }
+ .zone-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:3px; margin-top:4px !important; }
+ .zone { min-height:42px; max-height:88px; padding:3px; }
+ .zone-title { font-size:9px; margin-bottom:3px; }
+ .cards { gap:1px; }
+ .card { width:18px; height:26px; font-size:8px; }
+ .open-pair { margin:0 1px 1px 0; padding:1px; }
+ .win-opportunity-notice { margin:4px 0; padding:5px; font-size:10px; }
+ #game-sidebar { gap:5px; max-height:calc(100dvh - 60px); overflow-y:auto; overscroll-behavior:contain; }
+ #actions, #break-panel, #result-panel, #log-panel { padding:7px; margin:0; }
+ #actions { flex:1 0 auto; }
+ #actions h2, #break-panel h2, #result-panel h2, #log-panel h2 { font-size:13px; margin-bottom:5px; }
+ .action-list { flex-direction:column; align-items:stretch; gap:4px; }
+ .action-list button, #break-panel button {
+   width:100%; max-width:100%; padding:6px 5px; font-size:10px;
+   white-space:normal; overflow-wrap:anywhere; text-align:center;
+ }
+ .skill-grid { grid-template-columns:1fr; gap:4px; }
+ .skill-grid small { font-size:10px; }
+ #log-panel { display:flex; flex-direction:column; flex:1 0 105px; min-height:105px; }
+ #log-box { flex:1 1 auto; min-height:65px; max-height:160px; padding:5px; font-size:10px; }
+ .rules-fab { right:6px; bottom:6px; padding:6px 8px; font-size:10px; }
 }
 </style>
 </head>
 <body>
 <div id="app">
-  <h1>キャッチ＆コネクト オンライン</h1>
   <div id="notice" aria-live="polite"></div>
   <section id="home" class="panel">
     <h2>オンライン対戦</h2>
@@ -152,11 +230,15 @@ button.open-hand-btn { padding:7px 9px; font-size:12px; background:#2196f3; colo
       <div><div class="muted">部屋コード</div><strong id="game-code"></strong></div>
       <div><div id="turnline"></div><div class="muted">山札残り：<strong id="deck-count">0</strong>枚　／　ラウンド <strong id="round-count">1</strong></div></div>
     </div>
-    <div id="players"></div>
-    <section id="actions" class="panel"><h2>あなたの操作</h2><div id="action-content" class="action-list"></div></section>
-    <section id="break-panel" class="panel" hidden></section>
-    <section id="result-panel" class="panel" hidden><h2>ゲーム終了</h2><div id="result-list"></div></section>
-    <section class="panel"><h2>ゲームログ</h2><div id="log-box"></div></section>
+    <div id="game-layout">
+      <div id="players"></div>
+      <div id="game-sidebar">
+        <section id="actions" class="panel"><h2>あなたの操作</h2><div id="action-content" class="action-list"></div></section>
+        <section id="break-panel" class="panel" hidden></section>
+        <section id="result-panel" class="panel" hidden><h2>ゲーム終了</h2><div id="result-list"></div></section>
+        <section id="log-panel" class="panel"><h2>ゲームログ</h2><div id="log-box"></div></section>
+      </div>
+    </div>
   </section>
 </div>
 
@@ -303,10 +385,21 @@ function cardHtml(c, discardIndex = null) {
 }
 function pairHtml(pair) { return `<div class="open-pair">${pair.map(card => cardHtml(card)).join('')}</div>`; }
 function formatPairs(pairs) { return (pairs || []).map(p => `[${cardLabel(p[0])}, ${cardLabel(p[1])}]`).join(' '); }
+let currentScreen = 'home';
 function showScreen(screen) {
+  const enteringGame = screen === 'game' && currentScreen !== 'game';
   $('home').hidden = screen !== 'home';
   $('lobby').hidden = screen !== 'lobby';
   $('game').hidden = screen !== 'game';
+  // 部屋作成時の案内はゲーム開始後には不要なので、ゲーム画面へ移る時に消す。
+  if (enteringGame && $('notice').textContent.includes('参加者が入ったらゲームを開始してください。')) {
+    tell('');
+  }
+  currentScreen = screen;
+  document.body.classList.toggle('game-screen-active', screen === 'game');
+  // ゲーム中はルールブックをトップバー内に置き、スマホ画面の下部をふさがない。
+  if (screen === 'game') $('topbar').appendChild($('open-rules'));
+  else document.body.appendChild($('open-rules'));
 }
 $('create-btn').addEventListener('click', () => {
   socket.emit('createRoom', { name: $('create-name').value, initialScore: $('initial-score').value });
@@ -323,7 +416,12 @@ $('copy-code').addEventListener('click', async () => {
 });
 socket.on('connect', () => tell('サーバーに接続しました。'));
 socket.on('disconnect', () => tell('サーバーとの接続が切れました。ページを再読み込みして再参加してください。', true));
-socket.on('notice', data => tell(data.message, data.isError));
+socket.on('notice', data => {
+  const message = String(data?.message || '');
+  // サーバーから遅れて届いた場合も、部屋作成の案内をゲーム中に表示しない。
+  if (currentScreen === 'game' && message.includes('参加者が入ったらゲームを開始してください。')) return;
+  tell(message, data?.isError);
+});
 socket.on('joinedRoom', data => { $('room-code').textContent = data.code; $('game-code').textContent = data.code; });
 socket.on('lobbyState', data => { latestLobby = data; renderLobby(data); });
 socket.on('gameState', data => { latestState = data; renderGame(data); });
@@ -360,10 +458,24 @@ function renderGame(state) {
       });
     }
     const handOpenArea = isMyMainPhase
-      ? `<div class="hand-open-area"><div class="hand-open-title">オープン</div><div class="hand-open-buttons">${openButtons.length ? openButtons.join('') : '<span class="hand-open-empty">オープンできるペアはありません</span>'}</div></div>`
+      ? `<div class="hand-open-area"><div class="hand-open-buttons">${openButtons.length ? openButtons.join('') : '<span class="hand-open-empty">オープンできるペアはありません</span>'}</div></div>`
+      : '';
+    // 勝利可能な操作がある場合、オープン候補の近くで見落とさないように案内する。
+    const opportunityNotices = [];
+    if (isMe && (state.connectCandidates || []).length > 0) {
+      opportunityNotices.push('<div class="win-opportunity-notice connect-opportunity">⚠ コネクト可能です！オープンする前に、右の操作欄を確認してください。</div>');
+    }
+    if (isMe && (state.catchCandidates || []).length > 0) {
+      opportunityNotices.push('<div class="win-opportunity-notice catch-opportunity">⚠ キャッチ可能です！右の操作欄からキャッチを選べます。</div>');
+    }
+    const opportunityNotice = opportunityNotices.join('');
+    const isMySkillChoice = isMe && state.status !== 'finished'
+      && state.currentPlayerIndex === state.myId && state.turnPhase === 'skillChoice';
+    const skillTimingNotice = isMySkillChoice
+      ? '<div class="skill-timing-notice">✨ 特殊能力を使用できるタイミングです！ 操作欄から能力を選んでください。</div>'
       : '';
     const handArea = isMe
-      ? `<div class="hand-line"><strong>あなたの手札（${p.hand.length}枚）</strong>${canDiscardByClick ? '<span class="muted">捨てるカードをクリック</span>' : ''}</div><div class="cards hand-cards">${p.hand.map((card, index) => cardHtml(card, canDiscardByClick ? index : null)).join('') || '<span class="muted">手札なし</span>'}</div>${handOpenArea}`
+      ? `<div class="hand-line"><strong>あなたの手札（${p.hand.length}枚）</strong>${canDiscardByClick ? '<span class="muted">捨てるカードをクリック</span>' : ''}</div><div class="cards hand-cards">${p.hand.map((card, index) => cardHtml(card, canDiscardByClick ? index : null)).join('') || '<span class="muted">手札なし</span>'}</div>${skillTimingNotice}${opportunityNotice}${handOpenArea}`
       : `<div class="hand-line"><strong>手札</strong><span>${p.handCount}枚（非公開）</span></div>`;
     return `<div class="player-area ${isCurrent?'current':''} ${isMe?'mine':''}">
       <div class="area-head"><div><h3>${escapeHtml(p.name)}${isMe?'（あなた）':''}${p.isCpu?' 🤖':''}</h3><div class="muted">持ち点：<strong class="score">${p.score}点</strong>${!p.isCpu&&!p.connected?' ・切断中（CPU代行）':''}</div></div><div class="coins">${escapeHtml(coinBits)}</div></div>
