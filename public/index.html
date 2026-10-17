@@ -117,31 +117,56 @@ button.open-hand-btn { padding:7px 9px; font-size:12px; background:#2196f3; colo
  .panel { padding:9px; margin-bottom:8px; }
 }
 
-/* スマホ縦向き：プレイヤー情報を2列×2段、その下にコマンドとログ */
+/* スマホ縦向き：4人の盤面を2列×2段で画面いっぱいに表示。各盤面はオープン領域が上、捨て札が下。 */
 @media (max-width:700px) and (orientation:portrait) {
  body { padding:5px; }
  body.game-screen-active h1 { display:none; }
  body.game-screen-active #notice { min-height:0; padding:0 2px 3px; font-size:11px; }
  body.game-screen-active .rules-fab { position:static; inset:auto; z-index:auto; margin-left:auto; align-self:center; padding:6px 8px; font-size:11px; box-shadow:none; }
  #game-layout { grid-template-columns:minmax(0,1fr); gap:7px; }
- #players { grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
- .player-area { padding:6px; }
- .area-head { gap:4px; padding-bottom:5px; margin-bottom:5px; }
+ #players {
+   grid-template-columns:repeat(2,minmax(0,1fr));
+   grid-template-rows:repeat(2,minmax(0,1fr));
+   gap:5px;
+   height:calc(100dvh - 88px);
+   min-height:500px;
+   align-content:stretch;
+ }
+ .player-area {
+   display:flex;
+   flex-direction:column;
+   height:100%;
+   min-height:0;
+   overflow:hidden;
+   padding:6px;
+ }
+ .player-area > :not(.zone-row) { flex-shrink:0; }
+ .area-head { gap:4px; padding-bottom:4px; margin-bottom:4px; }
  .area-head h3 { font-size:12px; overflow-wrap:anywhere; }
  .score { font-size:12px; }
  .coins { font-size:10px; }
- .hand-line { font-size:10px; gap:4px; margin-bottom:5px; }
- .hand-cards { gap:3px; }
- .hand-cards .card { width:28px; height:40px; font-size:12px; }
- .zone-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:4px; margin-top:5px !important; }
- .zone { min-height:48px; max-height:100px; padding:4px; }
- .zone-title { font-size:9px; margin-bottom:4px; }
+ .hand-line { font-size:10px; gap:3px; margin-bottom:3px; }
+ .hand-cards { gap:2px; }
+ .hand-cards .card { width:25px; height:36px; font-size:11px; }
+ .zone-row {
+   grid-template-columns:minmax(0,1fr);
+   grid-template-rows:minmax(0,1.15fr) minmax(0,.85fr);
+   flex:1 1 0;
+   min-height:0;
+   gap:4px;
+   margin-top:5px !important;
+ }
+ .zone { min-height:0; max-height:none; padding:4px; overflow:auto; }
+ .zone-title { font-size:9px; margin-bottom:3px; }
  .cards { gap:2px; }
  .card { width:20px; height:29px; font-size:9px; }
  .open-pair { margin:0 1px 2px 0; padding:1px; }
- .hand-open-area { margin-top:6px; padding:5px; }
- .win-opportunity-notice { margin:4px 0; padding:5px; font-size:10px; }
- button.open-hand-btn { padding:6px; font-size:10px; }
+ .hand-open-area { margin-top:4px; padding:4px; }
+ .hand-open-buttons { gap:3px; }
+ .win-opportunity-notice { margin:3px 0; padding:4px; font-size:9px; line-height:1.25; }
+ .skill-timing-notice { margin:3px 0; padding:4px; font-size:9px; line-height:1.25; }
+ button.open-hand-btn { padding:4px 5px; font-size:9px; line-height:1.2; }
+ .hand-open-empty { font-size:9px; }
  #actions { margin-top:0; }
  #actions h2, #break-panel h2, #result-panel h2, #log-panel h2 { font-size:15px; }
  #log-box { max-height:180px; font-size:11px; }
