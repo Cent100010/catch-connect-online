@@ -79,6 +79,57 @@ button.open-hand-btn { padding:7px 9px; font-size:12px; background:#2196f3; colo
 .log-skill { color:#80deea; font-weight:800; }
 #result-list { line-height:1.9; }
 
+/* 特殊能力の発動演出 */
+.skill-toast {
+  position:fixed; inset:0; z-index:1500; display:flex; align-items:center; justify-content:center;
+  padding:18px; background:rgba(0,0,0,0); pointer-events:none; opacity:0;
+  transition:opacity .18s ease, background .18s ease;
+}
+.skill-toast.show { opacity:1; background:rgba(0,0,0,.48); }
+.skill-toast-card {
+  width:min(440px, 100%); padding:22px 20px; text-align:center; border-radius:16px;
+  border:2px solid #80deea; background:linear-gradient(145deg,#173d42,#102a31 70%);
+  box-shadow:0 12px 45px #000b, 0 0 28px rgba(128,222,234,.3);
+  transform:scale(.82) translateY(12px); transition:transform .22s cubic-bezier(.2,.8,.2,1);
+}
+.skill-toast.show .skill-toast-card { transform:scale(1) translateY(0); }
+.skill-toast-kicker { color:#80deea; font-size:13px; font-weight:900; letter-spacing:.12em; }
+.skill-toast-name { margin:8px 0; color:#ffeb3b; font-size:clamp(25px,6vw,38px); font-weight:1000; text-shadow:0 2px 8px #000; }
+.skill-toast-detail { color:#fff; font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+@media (prefers-reduced-motion: reduce) {
+  .skill-toast, .skill-toast-card { transition:none; }
+}
+
+/* アガリ結果と4組・8枚の完成形を表示するパネル */
+.win-toast {
+  position:fixed; inset:0; z-index:1600; display:none; align-items:center; justify-content:center;
+  padding:12px; background:rgba(0,0,0,.76); pointer-events:auto;
+}
+.win-toast.show { display:flex; }
+.win-toast-card {
+  width:min(560px,100%); max-height:min(92dvh,820px); overflow:auto; overscroll-behavior:contain;
+  padding:18px; border:2px solid #ffeb3b; border-radius:15px;
+  background:linear-gradient(150deg,#25432f,#10271b 72%); box-shadow:0 14px 48px #000d;
+}
+.win-toast-heading { text-align:center; color:#ffeb3b; font-size:clamp(25px,6vw,36px); font-weight:1000; margin:0 0 4px; }
+.win-toast-subheading { text-align:center; color:#fff; font-size:15px; font-weight:800; margin-bottom:12px; }
+.win-yaku { text-align:center; font-size:clamp(17px,4vw,22px); font-weight:900; color:#80deea; line-height:1.5; overflow-wrap:anywhere; }
+.win-scoreline { text-align:center; margin:7px 0 13px; color:#fff; font-weight:800; }
+.win-pairs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.win-pair-box { min-width:0; padding:8px; border:1px solid rgba(255,255,255,.24); border-radius:8px; background:rgba(0,0,0,.2); }
+.win-pair-label { font-size:11px; color:#c9d7ce; margin-bottom:5px; }
+.win-pair-cards { display:flex; align-items:center; gap:5px; }
+.win-pair-cards .card { width:40px; height:56px; font-size:15px; }
+.win-damage { margin:12px 0; padding:8px; border-radius:7px; background:rgba(255,152,0,.15); text-align:center; font-size:13px; }
+.win-toast-footer { display:flex; justify-content:center; margin-top:13px; }
+.win-toast-footer button { min-width:130px; background:#ff9800; color:#fff; }
+@media (max-width:420px) {
+  .win-toast-card { padding:13px; }
+  .win-pair-box { padding:6px; }
+  .win-pair-cards .card { width:34px; height:48px; font-size:13px; }
+}
+@media (prefers-reduced-motion: reduce) { .win-toast-card { transition:none; } }
+
 /* いつでも開けるルールブック */
 .rules-fab { position:fixed; right:14px; bottom:max(14px, env(safe-area-inset-bottom)); z-index:900; background:#ff9800; color:#fff; border:2px solid rgba(255,255,255,.8); border-radius:999px; padding:11px 16px; box-shadow:0 3px 14px #0008; font-size:14px; }
 .rules-modal { display:none; position:fixed; inset:0; z-index:1200; padding:12px; background:rgba(0,0,0,.78); align-items:center; justify-content:center; }
@@ -267,6 +318,27 @@ button.open-hand-btn { padding:7px 9px; font-size:12px; background:#2196f3; colo
   </section>
 </div>
 
+<div id="skill-toast" class="skill-toast" aria-live="assertive" aria-atomic="true" aria-hidden="true">
+  <div class="skill-toast-card">
+    <div class="skill-toast-kicker">SPECIAL ABILITY</div>
+    <div id="skill-toast-name" class="skill-toast-name">特殊能力発動！</div>
+    <div id="skill-toast-detail" class="skill-toast-detail"></div>
+  </div>
+</div>
+
+<div id="win-toast" class="win-toast" role="dialog" aria-modal="true" aria-labelledby="win-toast-heading" aria-hidden="true">
+  <div class="win-toast-card">
+    <h2 id="win-toast-heading" class="win-toast-heading">🎉 アガリ！</h2>
+    <div id="win-toast-subheading" class="win-toast-subheading"></div>
+    <div id="win-toast-yaku" class="win-yaku"></div>
+    <div id="win-toast-score" class="win-scoreline"></div>
+    <div class="muted" style="text-align:center;margin-bottom:7px">アガリ形（使用した4組・8枚）</div>
+    <div id="win-toast-pairs" class="win-pairs"></div>
+    <div id="win-toast-damage" class="win-damage"></div>
+    <div class="win-toast-footer"><button type="button" id="close-win-toast">閉じる</button></div>
+  </div>
+</div>
+
 <button type="button" id="open-rules" class="rules-fab" aria-haspopup="dialog" aria-controls="rules-modal">📖 ルールブック</button>
 <div id="rules-modal" class="rules-modal" role="dialog" aria-modal="true" aria-labelledby="rules-title" aria-hidden="true">
   <div class="rules-dialog">
@@ -411,6 +483,106 @@ function cardHtml(c, discardIndex = null) {
 function pairHtml(pair) { return `<div class="open-pair">${pair.map(card => cardHtml(card)).join('')}</div>`; }
 function formatPairs(pairs) { return (pairs || []).map(p => `[${cardLabel(p[0])}, ${cardLabel(p[1])}]`).join(' '); }
 let currentScreen = 'home';
+
+// ログに追加された特殊能力の使用記録を検出し、全プレイヤーの画面に演出する。
+let eventLogSnapshot = null;
+let eventLogRound = null;
+let skillToastTimer = null;
+let lastWinSeenId = null;
+function logSignature(entry) {
+  return `${entry?.type || ''}\\u0000${entry?.text || ''}`;
+}
+function getNewLogEntries(state) {
+  const logs = Array.isArray(state.logs) ? state.logs : [];
+  const current = logs.map(logSignature);
+  if (eventLogSnapshot === null || eventLogRound !== state.roundCount) {
+    eventLogSnapshot = current;
+    eventLogRound = state.roundCount;
+    return [];
+  }
+  let start = 0;
+  const samePrefix = current.length >= eventLogSnapshot.length
+    && eventLogSnapshot.every((sig, index) => current[index] === sig);
+  if (samePrefix) {
+    start = eventLogSnapshot.length;
+  } else {
+    // ログが一定件数で切り詰められる場合も、直前ログとの重なりから追加分を探す。
+    const maxOverlap = Math.min(eventLogSnapshot.length, current.length);
+    let overlap = 0;
+    for (let size = maxOverlap; size > 0; size--) {
+      let matches = true;
+      for (let i = 0; i < size; i++) {
+        if (eventLogSnapshot[eventLogSnapshot.length - size + i] !== current[i]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) { overlap = size; break; }
+    }
+    start = overlap;
+  }
+  eventLogSnapshot = current;
+  return logs.slice(start);
+}
+function showSkillToast(entry) {
+  const toast = $('skill-toast');
+  const text = String(entry?.text || '特殊能力が使用されました。');
+  const skills = ['ブースト','ファイト','チェンジ','スキップ','ブレイク','バインド','トラップ','ショット'];
+  const skillName = skills.find(name => text.includes(name));
+  $('skill-toast-name').textContent = skillName ? `${skillName} 発動！` : '特殊能力発動！';
+  $('skill-toast-detail').textContent = text;
+  toast.classList.add('show');
+  toast.setAttribute('aria-hidden', 'false');
+  if (skillToastTimer) clearTimeout(skillToastTimer);
+  skillToastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+    toast.setAttribute('aria-hidden', 'true');
+  }, 2100);
+}
+function showWinToast(result) {
+  const yakuText = Array.isArray(result.yakuList) && result.yakuList.length
+    ? result.yakuList.join('、') : '役情報がありません';
+  const multiplierText = Number(result.multiplier) > 1
+    ? `（銀コイン効果 ${result.totalScore}点 × ${result.multiplier}）` : '';
+  const scoreText = Number(result.finalScore) === Number(result.totalScore)
+    ? `${result.totalScore}点` : `${result.totalScore}点 ${multiplierText} = ${result.finalScore}点`;
+  const winType = result.winType === 'キャッチ' ? 'キャッチ' : 'コネクト';
+  $('win-toast-subheading').textContent = `${result.winnerName || 'プレイヤー'} が ${winType}！`;
+  $('win-toast-yaku').textContent = yakuText;
+  $('win-toast-score').textContent = `役の合計：${scoreText}`;
+  const pairs = Array.isArray(result.pairs4) ? result.pairs4 : [];
+  $('win-toast-pairs').innerHTML = pairs.map((pair, index) =>
+    `<div class="win-pair-box"><div class="win-pair-label">${index + 1}組目</div><div class="win-pair-cards">${(pair || []).map(card => cardHtml(card)).join('')}</div></div>`
+  ).join('');
+  const damageText = winType === 'キャッチ'
+    ? `${result.targetName || '振り込んだプレイヤー'} が ${Number(result.damage) || 0}点のダメージ`
+    : `他の3人がそれぞれ ${Number(result.damage) || 0}点のダメージ`;
+  $('win-toast-damage').textContent = damageText;
+  const panel = $('win-toast');
+  panel.classList.add('show');
+  panel.setAttribute('aria-hidden', 'false');
+  $('close-win-toast').focus();
+}
+function closeWinToast() {
+  const panel = $('win-toast');
+  panel.classList.remove('show');
+  panel.setAttribute('aria-hidden', 'true');
+}
+$('close-win-toast').addEventListener('click', closeWinToast);
+$('win-toast').addEventListener('click', event => {
+  if (event.target === $('win-toast')) closeWinToast();
+});
+function renderEventEffects(state) {
+  const added = getNewLogEntries(state);
+  const skillEntry = added.filter(entry => entry?.type === 'skill').at(-1);
+  if (skillEntry) showSkillToast(skillEntry);
+  // idを記憶し、同じアガリ情報を含む後続のgameStateで演出を繰り返さない。
+  const win = state.lastWin;
+  if (win && win.id !== lastWinSeenId) {
+    lastWinSeenId = win.id;
+    showWinToast(win);
+  }
+}
 function showScreen(screen) {
   const enteringGame = screen === 'game' && currentScreen !== 'game';
   $('home').hidden = screen !== 'home';
@@ -546,6 +718,7 @@ function renderGame(state) {
   renderActions(state);
   renderBreak(state);
   renderLogs(state.logs || []);
+  renderEventEffects(state);
   if (state.status === 'finished') {
     $('result-panel').hidden = false;
     $('result-list').innerHTML = (state.result || []).map(r => `<div><strong>${r.rank}位</strong>　${escapeHtml(r.name)}：${r.score}点</div>`).join('');

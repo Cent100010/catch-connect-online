@@ -304,7 +304,23 @@ function publicState(room, myId) {
     } : null,
     catchCandidates: [], openCandidates: [], connectCandidates: [],
     skillOptions: [], targetOptions: [], skillPairOptions: [],
-    result: room.result || null
+    result: room.result || null,
+    // 直近のアガリ情報。次ラウンド開始後もフロント側で表示できるよう保持する。
+    lastWin: room.lastWin ? {
+      id: room.lastWin.id,
+      winnerId: room.lastWin.winnerId,
+      winnerName: room.lastWin.winnerName,
+      winType: room.lastWin.winType,
+      yakuList: [...room.lastWin.yakuList],
+      totalScore: room.lastWin.totalScore,
+      multiplier: room.lastWin.multiplier,
+      finalScore: room.lastWin.finalScore,
+      damage: room.lastWin.damage,
+      targetName: room.lastWin.targetName,
+      pairs4: room.lastWin.pairs4.map(clonePair),
+      caughtCard: cloneCard(room.lastWin.caughtCard),
+      pairedHandCard: cloneCard(room.lastWin.pairedHandCard)
+    } : null
   };
   if (room.status === 'playing' && room.currentPlayerIndex === myId) {
     if (room.turnPhase === 'drawChoice') state.catchCandidates = catchCandidates(room, myId).map(c => ({
@@ -362,6 +378,8 @@ function startGame(room) {
   room.roundCount = 0;
   room.lastWinnerId = -1;
   room.result = null;
+  room.lastWin = null;
+  room.winSequence = 0;
   room.isGameOver = false;
   room.turnPhase = 'wait';
   room.cpuBusy = false;
@@ -449,6 +467,23 @@ function finishRoundByWin(room, winnerId, winType, pairs4, yakuList, totalScore,
   const winner = room.players[winnerId];
   const finalScore = totalScore * multiplier;
   const damage = winType === 'キャッチ' ? finalScore * 3 : finalScore;
+  // アガリ直後にラウンドが切り替わっても、全員の画面で役と8枚を表示できるよう記録。
+  room.winSequence = (room.winSequence || 0) + 1;
+  room.lastWin = {
+    id: `${room.code}-${room.winSequence}`,
+    winnerId,
+    winnerName: winner.name,
+    winType,
+    yakuList: [...yakuList],
+    totalScore,
+    multiplier,
+    finalScore,
+    damage,
+    targetName: winType === 'キャッチ' && targetId !== null ? room.players[targetId]?.name || '' : '',
+    pairs4: pairs4.map(clonePair),
+    caughtCard: cloneCard(caughtCard),
+    pairedHandCard: cloneCard(pairedHandCard)
+  };
   if (winType === 'キャッチ') {
     room.players[targetId].score -= damage;
     const caughtDescription = caughtCard
@@ -711,7 +746,8 @@ io.on('connection', socket => {
       code, status: 'lobby', hostSocketId: socket.id, initialScore: score,
       players: Array(4).fill(null), deck: [], roundCount: 0, currentPlayerIndex: 0,
       turnPhase: 'wait', logs: [], pendingBreak: null, pendingSkill: null,
-      result: null, lastWinnerId: -1, isGameOver: false, cpuBusy: false
+      result: null, lastWinnerId: -1, isGameOver: false, cpuBusy: false,
+      lastWin: null, winSequence: 0
     };
     room.players[0] = addHumanPlayer(0, safeName(data?.name, 'プレイヤー1'), socket.id);
     rooms.set(code, room);
